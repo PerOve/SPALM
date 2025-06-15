@@ -6,11 +6,12 @@
 2. [Installation](#installation)
 3. [Configuration](#configuration)
 4. [Personal Configuration](personal-configuration.md)
-5. [Core Modules](#core-modules)
-6. [Usage Examples](#usage-examples)
-7. [CI/CD Pipeline](#cicd-pipeline)
-8. [Docker Container](#docker-container)
-9. [Troubleshooting](#troubleshooting)
+5. [Azure App Setup](azure-app-setup.md)
+6. [Core Modules](#core-modules)
+7. [Usage Examples](#usage-examples)
+8. [GitHub Actions CI/CD](#github-actions-cicd)
+9. [Docker Container](#docker-container)
+10. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -210,28 +211,49 @@ Import-Module ./src/SPALM/SPALM.psm1
 Invoke-SPALMCleanup -SourceSite "https://contoso.sharepoint.com/sites/source" -TargetSite "https://contoso.sharepoint.com/sites/target" -BackupBeforeChanges -BackupPath "./backups" -WhatIf
 ```
 
-## CI/CD Pipeline
+## GitHub Actions CI/CD
 
-SPALM includes an Azure DevOps pipeline definition (`src/pipelines/azure-pipelines.yml`) that implements a full DEV-TEST-PROD workflow.
+SPALM uses GitHub Actions for its CI/CD workflow, implementing a full DEV-TEST-PROD deployment pipeline. The workflow configuration is located in `.github/workflows/build-and-deploy.yml`.
 
-The pipeline includes the following stages:
+The workflow includes the following jobs:
 
-1. **Build**: Build the SPALM modules and scripts
-2. **Test**: Run Pester tests to validate the modules
-3. **Deploy_DEV**: Deploy to the DEV environment
-4. **Deploy_TEST**: Deploy to the TEST environment
-5. **Deploy_PROD**: Deploy to the PROD environment
+1. **Build**:
 
-### Pipeline Variables
+   - Build the SPALM modules and scripts
+   - Run Pester tests to validate the modules
+   - Upload test results and build artifacts
 
-The pipeline requires the following variables to be defined in Azure DevOps:
+2. **Deploy**:
+   - Triggered manually via workflow dispatch with environment selection
+   - Downloads the built SPALM module
+   - Connects to SharePoint using the Azure App credentials
+   - Deploys changes based on the target environment:
+     - DEV/TEST: Performs automated migration
+     - PROD: Generates a migration plan for review
 
-- `TestSiteUrl`: URL of the test site
-- `TestUsername`: Username for the test site
-- `TestPassword`: Password for the test site
-- `DevSiteUrl`: URL of the DEV site
-- `DevClientId`: Client ID for the DEV site
-- `DevClientSecret`: Client secret for the DEV site
+### GitHub Secrets
+
+The workflow requires the following secrets to be defined in your GitHub repository:
+
+- `AZURE_APP_CLIENT_ID`: Client ID of the Azure App registration
+- `AZURE_APP_CLIENT_SECRET`: Client Secret of the Azure App registration
+- `AZURE_APP_TENANT_ID`: Tenant ID where the Azure App is registered
+- `DEV_SITE_URL`: URL of the development SharePoint site
+- `TEST_SITE_URL`: URL of the test SharePoint site
+- `PROD_SITE_URL`: URL of the production SharePoint site
+- `SOURCE_SITE_URL`: URL of the source/template SharePoint site
+
+### Triggering Deployments
+
+1. Go to your GitHub repository
+2. Navigate to the "Actions" tab
+3. Select the "Build and Test SPALM" workflow
+4. Click "Run workflow"
+5. Select the target environment (dev, test, or prod)
+6. Click "Run workflow" to start the deployment
+
+For more information on setting up the required Azure App with appropriate permissions, see the [Azure App Setup](azure-app-setup.md) guide.
+
 - `TestSiteUrl`: URL of the TEST site
 - `TestClientId`: Client ID for the TEST site
 - `TestClientSecret`: Client secret for the TEST site

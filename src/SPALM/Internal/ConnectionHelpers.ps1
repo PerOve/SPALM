@@ -77,3 +77,34 @@ function Get-InternalConnectParameters {
         }
     }
 }
+
+# Function to check if we should use the default PnP ClientId
+# As described in https://pnp.github.io/powershell/articles/defaultclientid.html
+function Use-InternalPnPDefaultClientId {
+    [CmdletBinding()]
+    [OutputType([System.Boolean])]
+    param()
+
+    process {
+        # Check if the environment variable is set
+        if ($env:PNPPOWERSHELL_SKIP_DEFAULTCREDENTIALS -eq "1") {
+            return $false
+        }
+
+        # Check for a configuration setting to override
+        $privateConfigPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "..\config\private\settings.private.json"
+        if (Test-Path -Path $privateConfigPath) {
+            try {
+                $config = Get-Content -Path $privateConfigPath -Raw | ConvertFrom-Json
+                if ($null -ne $config.SkipPnPDefaultClientId -and $config.SkipPnPDefaultClientId -eq $true) {
+                    return $false
+                }
+            } catch {
+                Write-Verbose "Error reading private settings: $_"
+            }
+        }
+
+        # If no overrides are found, use the default client ID
+        return $true
+    }
+}

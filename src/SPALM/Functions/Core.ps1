@@ -49,11 +49,17 @@ function Connect-SPALMSite {
                 if ($connectionParams.ConnectionType) { $ConnectionType = $connectionParams.ConnectionType }
             }
 
-            Write-Verbose "Connecting to SharePoint site: $Url using $ConnectionType authentication"
+            Write-Verbose "Connecting to SharePoint site: $Url using $ConnectionType authentication"            # Check if we should use the default PnP ClientId (unless specified directly)
+            $useDefaultClientId = (Use-InternalPnPDefaultClientId) -and (-not $ClientId)
 
             switch ($ConnectionType) {
                 "Interactive" {
-                    Connect-PnPOnline -Url $Url -Interactive
+                    if ($useDefaultClientId) {
+                        Write-Verbose "Using PnP PowerShell default ClientId for interactive auth"
+                        Connect-PnPOnline -Url $Url -Interactive -UseDefaultClientId
+                    } else {
+                        Connect-PnPOnline -Url $Url -Interactive
+                    }
                 }
                 "ClientSecret" {
                     if (-not $ClientId -or -not $ClientSecret) {
@@ -71,8 +77,8 @@ function Connect-SPALMSite {
                     }
 
                     $certParams = @{
-                        Url = $Url
-                        ClientId = $ClientId
+                        Url             = $Url
+                        ClientId        = $ClientId
                         CertificatePath = $CertificatePath
                     }
 
@@ -90,8 +96,7 @@ function Connect-SPALMSite {
 
             Write-Verbose "Connected to SharePoint site: $Url"
             return $true
-        }
-        catch {
+        } catch {
             Write-Error "Failed to connect to SharePoint site: $_"
             return $false
         }
@@ -107,8 +112,7 @@ function Disconnect-SPALMSite {
             Disconnect-PnPOnline
             Write-Verbose "Disconnected from SharePoint site"
             return $true
-        }
-        catch {
+        } catch {
             Write-Error "Failed to disconnect from SharePoint site: $_"
             return $false
         }

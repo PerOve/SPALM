@@ -12,7 +12,7 @@ SPALM is designed to assist in managing the lifecycle of SharePoint Online sites
 - **Provisioning**: Create new sites based on existing configurations
 - **Migration**: Apply changes from source to target sites
 - **Cleanup**: Remove items from target sites that don't exist in source
-- **CI/CD Pipeline Integration**: Azure DevOps YAML pipelines for automation
+- **CI/CD Pipeline Integration**: GitHub Actions workflows for automation
 - **Docker Support**: Testing environment using Docker/Podman
 
 ## Project Structure
@@ -85,7 +85,9 @@ New-SPALMSiteFromSource -SourceSite "https://tenant.sharepoint.com/sites/prod" -
 
 ## CI/CD Pipeline
 
-The repository includes ready-to-use Azure DevOps pipeline definitions for implementing a full DEV-TEST-PROD workflow. See `src/pipelines/` for details.
+The repository includes ready-to-use GitHub Actions workflows for implementing a full DEV-TEST-PROD deployment process. See `.github/workflows/` for details.
+
+For proper authentication with SharePoint, the solution uses an Azure App registration with appropriate permissions. Follow the [Azure App Setup](docs/azure-app-setup.md) guide to create and configure this app.
 
 ## Development
 

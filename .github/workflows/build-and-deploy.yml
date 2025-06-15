@@ -1,0 +1,153 @@
+name: Build and Test SPALM
+
+on:
+  push:
+    branches: [main, develop, feature/*, release/*]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v1
+        with:
+          powershell-version: "7.2"
+
+      - name: Install required PowerShell modules
+        shell: pwsh
+        run: |
+          Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser
+          Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+
+      - name: Build SPALM Module
+        shell: pwsh
+        run: |
+          New-Item -Path './build/modules' -ItemType Directory -Force
+          New-Item -Path './build/scripts' -ItemType Directory -Force
+          Copy-Item -Path './src/SPALM' -Destination './build/modules/SPALM' -Recurse -Force
+          Copy-Item -Path './src/scripts/*' -Destination './build/scripts' -Recurse -Force
+
+          # Write version info
+          $versionInfo = @{
+            BuildNumber = '${{ github.run_number }}'
+            BuildId = '${{ github.run_id }}'
+            BuildName = 'SPALM'
+            SourceBranch = '${{ github.ref }}'
+            SourceVersion = '${{ github.sha }}'
+            BuildDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+          }
+          $versionInfo | ConvertTo-Json | Out-File -FilePath './build/version.json' -Force
+
+      - name: Run Pester tests
+        shell: pwsh
+        run: |
+          Import-Module ./src/SPALM/SPALM.psm1 -Force
+          Invoke-Pester -Path ./src/tests -OutputFormat NUnitXml -OutputFile ./test-results.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ./test-results.xml
+          if-no-files-found: warn
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: SPALM-Module
+          path: ./build
+          if-no-files-found: error
+
+  deploy:
+    needs: build
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup PowerShell
+        uses: actions/setup-powershell@v1
+        with:
+          powershell-version: "7.2"
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: SPALM-Module
+          path: ./build
+
+      - name: Install required PowerShell modules
+        shell: pwsh
+        run: |
+          Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser
+
+      - name: Deploy to SharePoint
+        shell: pwsh
+        run: |
+          # Load the module
+          Import-Module ./build/modules/SPALM/SPALM.psm1 -Force
+
+          # Connect using App auth from secrets
+          $clientId = '${{ secrets.AZURE_APP_CLIENT_ID }}'
+          $clientSecret = '${{ secrets.AZURE_APP_CLIENT_SECRET }}'
+          $tenantId = '${{ secrets.AZURE_APP_TENANT_ID }}'
+
+          # Get target site URL based on environment
+          $targetEnvironment = '${{ github.event.inputs.environment }}'
+          switch ($targetEnvironment) {
+              'dev' {
+                  $targetSite = '${{ secrets.DEV_SITE_URL }}'
+              }
+              'test' {
+                  $targetSite = '${{ secrets.TEST_SITE_URL }}'
+              }
+              'prod' {
+                  $targetSite = '${{ secrets.PROD_SITE_URL }}'
+              }
+          }
+
+          # Connect to SharePoint
+          Write-Host "Connecting to SharePoint site: $targetSite"
+          Connect-SPALMSite -Url $targetSite -ConnectionType ClientSecret -ClientId $clientId -ClientSecret $clientSecret -TenantId $tenantId
+
+          # Run appropriate SPALM commands based on environment
+          if ($targetEnvironment -eq 'dev' -or $targetEnvironment -eq 'test') {
+              # For dev/test, we can do more automated deployments
+              Write-Host "Running site migration for environment: $targetEnvironment"
+              $sourceSite = '${{ secrets.SOURCE_SITE_URL }}'
+              Invoke-SPALMSiteMigration -SourceSite $sourceSite -TargetSite $targetSite -BackupBeforeChanges
+          } else {
+              # For prod, generate a migration plan for review
+              Write-Host "Generating migration plan for environment: $targetEnvironment"
+              $sourceSite = '${{ secrets.SOURCE_SITE_URL }}'
+              $plan = Get-SPALMMigrationPlan -SourceSite $sourceSite -TargetSite $targetSite
+              $plan | ConvertTo-Json -Depth 5 | Out-File -FilePath './migration-plan.json' -Force
+          }
+
+          # Disconnect
+          Disconnect-SPALMSite
+
+      - name: Upload migration plan (if prod)
+        if: github.event.inputs.environment == 'prod'
+        uses: actions/upload-artifact@v3
+        with:
+          name: migration-plan
+          path: ./migration-plan.json
