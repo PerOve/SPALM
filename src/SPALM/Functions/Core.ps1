@@ -34,19 +34,36 @@ function Connect-SPALMSite {
 
     process {
         try {
-            # Check if we should use a pre-configured connection from private settings
+            # Check if we should use a pre-configured connection
+            # (from GitHub secrets, environment variables, or private settings)
             if ($ConnectionName) {
                 Write-Verbose "Using connection profile: $ConnectionName"
-                $connectionParams = Get-InternalConnectParameters -SiteUrl $Url -ConnectionName $ConnectionName
 
-                # Override the URL and connection parameters
-                $Url = $connectionParams.Url
-                if ($connectionParams.ClientId) { $ClientId = $connectionParams.ClientId }
-                if ($connectionParams.ClientSecret) { $ClientSecret = $connectionParams.ClientSecret }
-                if ($connectionParams.CertificatePath) { $CertificatePath = $connectionParams.CertificatePath }
-                if ($connectionParams.CertificatePassword) { $CertificatePassword = $connectionParams.CertificatePassword }
-                if ($connectionParams.TenantId) { $TenantId = $connectionParams.TenantId }
-                if ($connectionParams.ConnectionType) { $ConnectionType = $connectionParams.ConnectionType }
+                try {
+                    # First check for GitHub secrets and environment variables
+                    $githubParams = Get-InternalGitHubSecretParameters -ConnectionName $ConnectionName
+                    if ($githubParams) {
+                        Write-Verbose "Using GitHub secrets/environment variables for connection"
+                        $connectionParams = $githubParams
+                    }
+                    # If no GitHub secrets found, try private connection settings
+                    else {
+                        Write-Verbose "No GitHub secrets found, checking for private connection settings"
+                        $connectionParams = Get-InternalConnectParameters -SiteUrl $Url -ConnectionName $ConnectionName
+                    }
+
+                    # Override the URL and connection parameters
+                    $Url = $connectionParams.Url
+                    if ($connectionParams.ConnectionType) { $ConnectionType = $connectionParams.ConnectionType }
+                    if ($connectionParams.ClientId) { $ClientId = $connectionParams.ClientId }
+                    if ($connectionParams.ClientSecret) { $ClientSecret = $connectionParams.ClientSecret }
+                    if ($connectionParams.CertificatePath) { $CertificatePath = $connectionParams.CertificatePath }
+                    if ($connectionParams.CertificatePassword) { $CertificatePassword = $connectionParams.CertificatePassword }
+                    if ($connectionParams.TenantId) { $TenantId = $connectionParams.TenantId }
+                } catch {
+                    Write-Warning "Error retrieving connection parameters for '$ConnectionName': $_"
+                    # Continue with the parameters provided directly to the function
+                }
             }
 
             Write-Verbose "Connecting to SharePoint site: $Url using $ConnectionType authentication"            # Check if we should use the default PnP ClientId (unless specified directly)

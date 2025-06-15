@@ -1,18 +1,38 @@
 # SPALM.psm1
 # SharePoint ALM toolkit for managing site columns, content types, lists and views across environments
 
+# Import all internal functions first (as public functions may depend on them)
+$internalPath = Join-Path -Path $PSScriptRoot -ChildPath 'Internal'
+if (Test-Path -Path $internalPath) {
+    # Import ConnectionHelpers first, then GitHubSecretHelpers, then the rest
+    $priorityFiles = @(
+        "ConnectionHelpers.ps1",
+        "GitHubSecretHelpers.ps1"
+    )
+
+    # Import priority files first in specific order
+    foreach ($fileName in $priorityFiles) {
+        $filePath = Join-Path -Path $internalPath -ChildPath $fileName
+        if (Test-Path -Path $filePath) {
+            Write-Verbose "Importing internal module: $filePath"
+            . $filePath
+        }
+    }
+
+    # Import all other internal files
+    foreach ($function in (Get-ChildItem -Path "$internalPath\*.ps1")) {
+        if ($priorityFiles -notcontains $function.Name) {
+            Write-Verbose "Importing internal module: $($function.FullName)"
+            . $function.FullName
+        }
+    }
+}
+
 # Import all function files
 $functionPath = Join-Path -Path $PSScriptRoot -ChildPath 'Functions'
 if (Test-Path -Path $functionPath) {
     foreach ($function in (Get-ChildItem -Path "$functionPath\*.ps1")) {
-        . $function.FullName
-    }
-}
-
-# Import all internal functions
-$internalPath = Join-Path -Path $PSScriptRoot -ChildPath 'Internal'
-if (Test-Path -Path $internalPath) {
-    foreach ($function in (Get-ChildItem -Path "$internalPath\*.ps1")) {
+        Write-Verbose "Importing function module: $($function.FullName)"
         . $function.FullName
     }
 }

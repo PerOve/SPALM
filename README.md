@@ -12,7 +12,7 @@ SPALM is designed to assist in managing the lifecycle of SharePoint Online sites
 - **Provisioning**: Create new sites based on existing configurations
 - **Migration**: Apply changes from source to target sites
 - **Cleanup**: Remove items from target sites that don't exist in source
-- **CI/CD Pipeline Integration**: GitHub Actions workflows for automation
+- **CI/CD Pipeline Integration**: GitHub Actions workflows for automation with secure secret management
 - **Docker Support**: Testing environment using Docker/Podman
 
 ## Project Structure
@@ -88,6 +88,22 @@ New-SPALMSiteFromSource -SourceSite "https://tenant.sharepoint.com/sites/prod" -
 The repository includes ready-to-use GitHub Actions workflows for implementing a full DEV-TEST-PROD deployment process. See `.github/workflows/` for details.
 
 For proper authentication with SharePoint, the solution uses an Azure App registration with appropriate permissions. Follow the [Azure App Setup](docs/azure-app-setup.md) guide to create and configure this app.
+
+### Secure Connection Management
+
+SPALM supports two approaches for managing connection information:
+
+1. **GitHub Secrets (Recommended for CI/CD)**: Store all sensitive information as GitHub Secrets and access them securely in workflows. See [GitHub Connections](docs/github-connections.md) for setup instructions.
+
+2. **Private Configuration Files**: Store connection information in private JSON files that aren't committed to the repository (for local development). See [Personal Configuration](docs/personal-configuration.md) for details.
+
+Example using GitHub Secrets:
+
+```powershell
+# In GitHub Actions workflow:
+. ./config/set-github-connections.ps1
+Connect-SPALMSite -ConnectionName "Dev"  # Uses secrets from GitHub environment
+```
 
 ## Development
 
