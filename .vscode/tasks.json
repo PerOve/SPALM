@@ -1,0 +1,61 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Import SPALM Modules",
+            "type": "shell",
+            "command": "Import-Module ${workspaceFolder}/src/SPALM/SPALM.psm1 -Force; Write-Host 'SPALM module loaded successfully'",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Run Tests",
+            "type": "shell",
+            "command": "Invoke-Pester -Path ${workspaceFolder}/src/tests",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Build SPALM",
+            "type": "shell",
+            "command": "New-Item -Path '${workspaceFolder}/build/modules' -ItemType Directory -Force; New-Item -Path '${workspaceFolder}/build/scripts' -ItemType Directory -Force; Copy-Item -Path '${workspaceFolder}/src/SPALM' -Destination '${workspaceFolder}/build/modules/SPALM' -Recurse -Force; Copy-Item -Path '${workspaceFolder}/src/scripts/*' -Destination '${workspaceFolder}/build/scripts' -Recurse -Force; Write-Host 'SPALM built successfully'",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Docker Build",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/src/docker; docker build -t spalm-test -f Dockerfile ..",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        },
+        {
+            "label": "Docker Run",
+            "type": "shell",
+            "command": "docker run -it --rm spalm-test",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            }
+        }
+    ]
+}

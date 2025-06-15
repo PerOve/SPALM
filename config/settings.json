@@ -1,0 +1,50 @@
+{
+    "Environment": {
+        "Name": "Development",
+        "TenantUrl": "https://contoso.sharepoint.com"
+    },
+    "Sites": {
+        "Source": {
+            "Url": "https://contoso.sharepoint.com/sites/source",
+            "Authentication": {
+                "Type": "Interactive"
+            }
+        },
+        "Target": {
+            "Url": "https://contoso.sharepoint.com/sites/target",
+            "Authentication": {
+                "Type": "Interactive"
+            }
+        }
+    },
+    "Logging": {
+        "Level": "Information",
+        "FilePath": "logs/spalm.log",
+        "EnableConsole": true
+    },
+    "Comparison": {
+        "IncludeFields": true,
+        "IncludeContentTypes": true,
+        "IncludeLists": true,
+        "IncludeViews": true,
+        "ExportReport": true,
+        "ExportPath": "reports"
+    },
+    "Migration": {
+        "CreateChangeLog": true,
+        "BackupBeforeChanges": true,
+        "BackupPath": "backups",
+        "ApplyChanges": false,
+        "RemoveItemsNotInSource": false
+    },
+    "Pipeline": {
+        "Environments": [
+            "DEV",
+            "TEST",
+            "PROD"
+        ],
+        "DevSiteUrl": "https://contoso.sharepoint.com/sites/dev",
+        "TestSiteUrl": "https://contoso.sharepoint.com/sites/test",
+        "ProdSiteUrl": "https://contoso.sharepoint.com/sites/prod"
+    }
+}

@@ -1,0 +1,273 @@
+name: $(BuildDefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+      - develop
+      - feature/*
+      - release/*
+
+variables:
+  - name: BuildConfiguration
+    value: "Release"
+  - name: BuildPlatform
+    value: "Any CPU"  - name: PsModulePath
+    value: "$(Build.SourcesDirectory)/src/SPALM"
+  - name: TestSite
+    value: "$(TestSiteUrl)"
+
+stages:
+  - stage: Build
+    displayName: "Build SPALM"
+    jobs:
+      - job: BuildJob
+        displayName: "Build SPALM Modules"
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - task: PowerShell@2
+            displayName: "Install Required PowerShell Modules"
+            inputs:
+              targetType: "inline"
+              script: |
+                Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser
+                Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+
+          - task: PowerShell@2
+            displayName: "Build SPALM Modules"
+            inputs:
+              targetType: "inline"
+              script: |
+                # Create build output directory
+                New-Item -Path '$(Build.ArtifactStagingDirectory)/modules' -ItemType Directory -Force
+                New-Item -Path '$(Build.ArtifactStagingDirectory)/scripts' -ItemType Directory -Force                # Copy modules to build output
+                Copy-Item -Path '$(Build.SourcesDirectory)/src/SPALM' -Destination '$(Build.ArtifactStagingDirectory)/modules/SPALM' -Recurse -Force
+                Copy-Item -Path '$(Build.SourcesDirectory)/src/scripts/*' -Destination '$(Build.ArtifactStagingDirectory)/scripts' -Recurse -Force
+
+                # Write version info
+                $versionInfo = @{
+                  BuildNumber = '$(Build.BuildNumber)'
+                  BuildId = '$(Build.BuildId)'
+                  BuildName = '$(Build.DefinitionName)'
+                  SourceBranch = '$(Build.SourceBranch)'
+                  SourceVersion = '$(Build.SourceVersion)'
+                  BuildDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
+                }
+
+                $versionInfo | ConvertTo-Json | Out-File -FilePath '$(Build.ArtifactStagingDirectory)/version.json' -Force
+
+          - task: PublishBuildArtifacts@1
+            displayName: "Publish SPALM Modules"
+            inputs:
+              pathToPublish: "$(Build.ArtifactStagingDirectory)"
+              artifactName: "SPALM"
+
+  - stage: Test
+    displayName: "Test SPALM"
+    dependsOn: Build
+    jobs:
+      - job: TestJob
+        displayName: "Run SPALM Tests"
+        pool:
+          vmImage: "ubuntu-latest"
+        steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              buildType: "current"
+              downloadType: "single"
+              artifactName: "SPALM"
+              downloadPath: "$(System.ArtifactsDirectory)"
+
+          - task: PowerShell@2
+            displayName: "Install Required PowerShell Modules"
+            inputs:
+              targetType: "inline"
+              script: |
+                Install-Module -Name PnP.PowerShell -Force -Scope CurrentUser
+                Install-Module -Name Pester -Force -Scope CurrentUser -SkipPublisherCheck
+
+          - task: PowerShell@2
+            displayName: "Run Pester Tests"
+            inputs:
+              targetType: "inline"
+              script: |
+                $modulesPath = '$(System.ArtifactsDirectory)/SPALM/modules'
+                $testsPath = '$(Build.SourcesDirectory)/src/tests'
+
+                # Import modules
+                Get-ChildItem -Path $modulesPath -Directory | ForEach-Object {
+                  $modulePath = Join-Path -Path $_.FullName -ChildPath "$($_.Name).psm1"
+                  if (Test-Path -Path $modulePath) {
+                    Import-Module $modulePath -Force
+                  }
+                }
+
+                # Run tests
+                $testResults = Invoke-Pester -Path $testsPath -PassThru -OutputFormat NUnitXml -OutputFile '$(Build.ArtifactStagingDirectory)/TestResults.xml'
+
+                # Fail build if tests fail
+                if ($testResults.FailedCount -gt 0) {
+                  Write-Error "Pester tests failed: $($testResults.FailedCount) tests failed out of $($testResults.TotalCount) total tests."
+                  exit 1
+                }
+            env:
+              SPALM_TEST_SITE_URL: $(TestSite)
+              SPALM_TEST_USERNAME: $(TestUsername)
+              SPALM_TEST_PASSWORD: $(TestPassword)
+
+          - task: PublishTestResults@2
+            displayName: "Publish Test Results"
+            inputs:
+              testResultsFormat: "NUnit"
+              testResultsFiles: "$(Build.ArtifactStagingDirectory)/TestResults.xml"
+              mergeTestResults: true
+              testRunTitle: "SPALM Tests"
+
+  - stage: Deploy_DEV
+    displayName: "Deploy to DEV"
+    dependsOn: Test
+    condition: and(succeeded(), in(variables['Build.SourceBranch'], 'refs/heads/develop', 'refs/heads/feature/*'))
+    jobs:
+      - deployment: DeployDEV
+        displayName: "Deploy SPALM to DEV"
+        environment: "DEV"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "SPALM"
+                    downloadPath: "$(System.ArtifactsDirectory)"
+
+                - task: PowerShell@2
+                  displayName: "Deploy to DEV"
+                  inputs:
+                    targetType: "inline"
+                    script: |
+                      Write-Host "Deploying SPALM to DEV environment"
+
+                      # Import SPALM modules
+                      $modulesPath = '$(System.ArtifactsDirectory)/SPALM/modules'
+                      Get-ChildItem -Path $modulesPath -Directory | ForEach-Object {
+                        $modulePath = Join-Path -Path $_.FullName -ChildPath "$($_.Name).psm1"
+                        if (Test-Path -Path $modulePath) {
+                          Import-Module $modulePath -Force
+                        }
+                      }
+
+                      # Connect to SharePoint site
+                      Connect-SPALMSite -Url "$(DevSiteUrl)" -ConnectionType "ClientSecret" -ClientId "$(DevClientId)" -ClientSecret "$(DevClientSecret)"
+
+                      # Run deployment script
+                      Write-Host "Running DEV deployment script"
+
+                      # Disconnect from SharePoint site
+                      Disconnect-SPALMSite
+                  env:
+                    SPALM_ENV: "DEV"
+                    SPALM_SITE_URL: $(DevSiteUrl)
+                    SPALM_CLIENT_ID: $(DevClientId)
+                    SPALM_CLIENT_SECRET: $(DevClientSecret)
+
+  - stage: Deploy_TEST
+    displayName: "Deploy to TEST"
+    dependsOn: Deploy_DEV
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployTEST
+        displayName: "Deploy SPALM to TEST"
+        environment: "TEST"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "SPALM"
+                    downloadPath: "$(System.ArtifactsDirectory)"
+
+                - task: PowerShell@2
+                  displayName: "Deploy to TEST"
+                  inputs:
+                    targetType: "inline"
+                    script: |
+                      Write-Host "Deploying SPALM to TEST environment"
+
+                      # Import SPALM modules
+                      $modulesPath = '$(System.ArtifactsDirectory)/SPALM/modules'
+                      Get-ChildItem -Path $modulesPath -Directory | ForEach-Object {
+                        $modulePath = Join-Path -Path $_.FullName -ChildPath "$($_.Name).psm1"
+                        if (Test-Path -Path $modulePath) {
+                          Import-Module $modulePath -Force
+                        }
+                      }
+
+                      # Connect to SharePoint site
+                      Connect-SPALMSite -Url "$(TestSiteUrl)" -ConnectionType "ClientSecret" -ClientId "$(TestClientId)" -ClientSecret "$(TestClientSecret)"
+
+                      # Run deployment script
+                      Write-Host "Running TEST deployment script"
+
+                      # Disconnect from SharePoint site
+                      Disconnect-SPALMSite
+                  env:
+                    SPALM_ENV: "TEST"
+                    SPALM_SITE_URL: $(TestSiteUrl)
+                    SPALM_CLIENT_ID: $(TestClientId)
+                    SPALM_CLIENT_SECRET: $(TestClientSecret)
+
+  - stage: Deploy_PROD
+    displayName: "Deploy to PROD"
+    dependsOn: Deploy_TEST
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployPROD
+        displayName: "Deploy SPALM to PROD"
+        environment: "PROD"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadBuildArtifacts@0
+                  inputs:
+                    buildType: "current"
+                    downloadType: "single"
+                    artifactName: "SPALM"
+                    downloadPath: "$(System.ArtifactsDirectory)"
+
+                - task: PowerShell@2
+                  displayName: "Deploy to PROD"
+                  inputs:
+                    targetType: "inline"
+                    script: |
+                      Write-Host "Deploying SPALM to PROD environment"
+
+                      # Import SPALM modules
+                      $modulesPath = '$(System.ArtifactsDirectory)/SPALM/modules'
+                      Get-ChildItem -Path $modulesPath -Directory | ForEach-Object {
+                        $modulePath = Join-Path -Path $_.FullName -ChildPath "$($_.Name).psm1"
+                        if (Test-Path -Path $modulePath) {
+                          Import-Module $modulePath -Force
+                        }
+                      }
+
+                      # Connect to SharePoint site
+                      Connect-SPALMSite -Url "$(ProdSiteUrl)" -ConnectionType "ClientSecret" -ClientId "$(ProdClientId)" -ClientSecret "$(ProdClientSecret)"
+
+                      # Run deployment script
+                      Write-Host "Running PROD deployment script"
+
+                      # Disconnect from SharePoint site
+                      Disconnect-SPALMSite
+                  env:
+                    SPALM_ENV: "PROD"
+                    SPALM_SITE_URL: $(ProdSiteUrl)
+                    SPALM_CLIENT_ID: $(ProdClientId)
+                    SPALM_CLIENT_SECRET: $(ProdClientSecret)
