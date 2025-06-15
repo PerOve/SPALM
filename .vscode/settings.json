@@ -19,5 +19,25 @@
         }
     },
     "terminal.integrated.defaultProfile.windows": "PowerShell",
-    "powershell.pester.codeLens": false
+    "powershell.pester.codeLens": false,
+    // GitHub Copilot configuration
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": true,
+        "markdown": true,
+        "powershell": true
+    },
+    "github.copilot.advanced": {
+        "indentationMode": {
+            "powershell": "tabSize=4,useTabs=false"
+        }
+    }, // Local instructions for GitHub Copilot
+    "github.copilot.editor.enableCodeActions": true,
+    // Point to the Copilot instructions files
+    "github.copilot.editor.defaultTextCompleterProfiles": [
+        {
+            "name": "SPALM PowerShell Module",
+            "prompt": "docs/CopilotPrompt.md"
+        }
+    ]
 }

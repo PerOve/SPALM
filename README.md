@@ -20,13 +20,16 @@ SPALM is designed to assist in managing the lifecycle of SharePoint Online sites
 ```
 SPALM/
 ├── src/                    # Source code
-│   ├── modules/            # PowerShell modules
-│   │   ├── SPALM.Core/     # Core functionality
-│   │   ├── SPALM.Comparison/  # Site comparison
-│   │   ├── SPALM.Provisioning/ # Site provisioning
-│   │   ├── SPALM.Migration/ # Change application
-│   │   ├── SPALM.Cleanup/   # Cleanup functionality
-│   │   └── SPALM.Pipeline/  # CI/CD integration
+│   ├── SPALM/              # PowerShell module
+│   │   ├── Functions/      # PowerShell functions
+│   │   │   ├── Core.ps1    # Core functionality
+│   │   │   ├── Comparison.ps1  # Site comparison
+│   │   │   ├── Provisioning.ps1 # Site provisioning
+│   │   │   ├── Migration.ps1 # Change application
+│   │   │   └── Cleanup.ps1   # Cleanup functionality
+│   │   ├── Internal/       # Internal helper functions
+│   │   ├── SPALM.psd1      # Module manifest
+│   │   └── SPALM.psm1      # Module loader
 │   ├── scripts/            # PowerShell scripts
 │   ├── functions/          # PowerShell functions
 │   ├── tests/              # Pester tests
@@ -93,6 +96,17 @@ cd src/docker
 docker build -t spalm-test -f Dockerfile .
 docker run -it spalm-test
 ```
+
+## Development Tools
+
+### GitHub Copilot
+
+This project includes guidance files for GitHub Copilot to help with development:
+
+- `docs/CopilotPrompt.md` - A concise prompt for GitHub Copilot to understand the SPALM context
+- `docs/CopilotInstructions.md` - Detailed instructions with examples and best practices
+
+These files contain references to PnP.PowerShell documentation and SharePoint development resources to help with code suggestions related to SharePoint ALM tasks.
 
 ## Contributing
 
