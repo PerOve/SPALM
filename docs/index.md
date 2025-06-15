@@ -9,8 +9,7 @@
 5. [Usage Examples](#usage-examples)
 6. [CI/CD Pipeline](#cicd-pipeline)
 7. [Docker Container](#docker-container)
-8. [MCP Server](#mcp-server)
-9. [Troubleshooting](#troubleshooting)
+8. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -236,37 +235,6 @@ docker build -t spalm-test -f Dockerfile .
 
 ```
 docker run -it spalm-test
-```
-
-## MCP Server
-
-SPALM includes a Model Context Protocol (MCP) server that exposes the SPALM functionality via a REST API.
-
-### Starting the MCP Server
-
-```powershell
-./src/mcp/Start-SpalmMcpServer.ps1
-```
-
-The MCP server exposes the following endpoints:
-
-- `GET /api/health`: Check the health of the server
-- `GET /api/config`: Get the current configuration
-- `POST /api/connect`: Connect to a SharePoint site
-- `POST /api/disconnect`: Disconnect from a SharePoint site
-- `POST /api/compare`: Compare two SharePoint sites
-
-### Example: Comparing Sites via MCP
-
-```powershell
-Invoke-RestMethod -Method POST -Uri "http://localhost:8080/api/compare" -Body (@{
-    sourceSite = "https://contoso.sharepoint.com/sites/source"
-    targetSite = "https://contoso.sharepoint.com/sites/target"
-    includeColumns = $true
-    includeContentTypes = $true
-    includeLists = $true
-    includeViews = $true
-} | ConvertTo-Json) -ContentType "application/json"
 ```
 
 ## Troubleshooting
