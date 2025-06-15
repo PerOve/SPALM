@@ -28,36 +28,47 @@ function Initialize-SPALM {
             if (-not (Get-Module -Name PnP.PowerShell -ListAvailable)) {
                 Write-Error "PnP.PowerShell module is not installed. Please install it with: Install-Module -Name PnP.PowerShell -Scope CurrentUser"
                 return $false
-            }
+            }            # Load configuration - check for private config first, then fall back to shared config
+            $privateConfigPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "..\config\private\sites.private.json"
+            $sharedConfigPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "..\config\settings.json"
+            $templateConfigPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "..\config\sites.template.json"
 
-            # Load configuration
-            $configPath = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath "..\config\settings.json"
-            if (Test-Path -Path $configPath) {
-                $script:SPALMConfig = Get-Content -Path $configPath -Raw | ConvertFrom-Json
-            }
-            else {
+            if (Test-Path -Path $privateConfigPath) {
+                Write-Verbose "Loading private configuration from $privateConfigPath"
+                $script:SPALMConfig = Get-Content -Path $privateConfigPath -Raw | ConvertFrom-Json
+                $script:UsingPrivateConfig = $true
+            } elseif (Test-Path -Path $sharedConfigPath) {
+                Write-Verbose "Loading shared configuration from $sharedConfigPath"
+                $script:SPALMConfig = Get-Content -Path $sharedConfigPath -Raw | ConvertFrom-Json
+                $script:UsingPrivateConfig = $false
+            } elseif (Test-Path -Path $templateConfigPath) {
+                Write-Verbose "Loading template configuration from $templateConfigPath"
+                $script:SPALMConfig = Get-Content -Path $templateConfigPath -Raw | ConvertFrom-Json
+                $script:UsingPrivateConfig = $false
+            } else {
+                Write-Verbose "No configuration file found, using default configuration"
                 $script:SPALMConfig = [PSCustomObject]@{
                     Environment = @{
-                        Name = "Development"
+                        Name      = "Development"
                         TenantUrl = ""
                     }
-                    Sites = @{
+                    Sites       = @{
                         Source = @{
-                            Url = ""
+                            Url            = ""
                             Authentication = @{
                                 Type = "Interactive"
                             }
                         }
                         Target = @{
-                            Url = ""
+                            Url            = ""
                             Authentication = @{
                                 Type = "Interactive"
                             }
                         }
                     }
-                    Logging = @{
-                        Level = "Information"
-                        FilePath = "logs/spalm.log"
+                    Logging     = @{
+                        Level         = "Information"
+                        FilePath      = "logs/spalm.log"
                         EnableConsole = $true
                     }
                 }
@@ -65,8 +76,7 @@ function Initialize-SPALM {
 
             Write-Verbose "SPALM module initialized successfully"
             return $true
-        }
-        catch {
+        } catch {
             Write-Error "Failed to initialize SPALM module: $_"
             return $false
         }

@@ -25,6 +25,15 @@
 **/credentials.json
 **/credentials.xml
 
+# Private configuration files
+config/private/**
+**/*.private.json
+**/*.private.xml
+**/*.private.ps1
+**/*.personal.json
+**/*.personal.xml
+**/*.personal.ps1
+
 # Log files
 *.log
 

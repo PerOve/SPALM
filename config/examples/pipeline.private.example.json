@@ -1,0 +1,45 @@
+{
+    "azure": {
+        "subscriptionId": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "resourceGroup": "my-spalm-resources",
+        "location": "westeurope",
+        "tenantId": "22222222-2222-2222-2222-222222222222"
+    },
+    "github": {
+        "owner": "my-github-username",
+        "repo": "my-private-spalm",
+        "branch": "development",
+        "pat": "ghp_YOUR_PRIVATE_GITHUB_PAT_TOKEN_HERE"
+    },
+    "serviceConnections": {
+        "devops": {
+            "organization": "my-org",
+            "project": "My SharePoint Project",
+            "pat": "YOUR_AZURE_DEVOPS_PAT_TOKEN"
+        }
+    },
+    "deployment": {
+        "environments": [
+            {
+                "name": "Development",
+                "url": "https://mytenant.sharepoint.com/sites/mydev",
+                "approvers": []
+            },
+            {
+                "name": "Test",
+                "url": "https://mytenant.sharepoint.com/sites/mytest",
+                "approvers": [
+                    "myemail@example.com"
+                ]
+            },
+            {
+                "name": "Production",
+                "url": "https://mytenant.sharepoint.com/sites/myprod",
+                "approvers": [
+                    "manager@example.com",
+                    "admin@example.com"
+                ]
+            }
+        ]
+    }
+}

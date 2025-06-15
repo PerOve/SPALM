@@ -11,6 +11,9 @@ function Connect-SPALMSite {
         [string]$ConnectionType = "Interactive",
 
         [Parameter(Mandatory = $false)]
+        [string]$ConnectionName,
+
+        [Parameter(Mandatory = $false)]
         [PSCredential]$Credentials,
 
         [Parameter(Mandatory = $false)]
@@ -23,11 +26,31 @@ function Connect-SPALMSite {
         [string]$CertificatePath,
 
         [Parameter(Mandatory = $false)]
-        [string]$CertificatePassword
+        [string]$CertificatePassword,
+
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId
     )
 
     process {
         try {
+            # Check if we should use a pre-configured connection from private settings
+            if ($ConnectionName) {
+                Write-Verbose "Using connection profile: $ConnectionName"
+                $connectionParams = Get-InternalConnectParameters -SiteUrl $Url -ConnectionName $ConnectionName
+
+                # Override the URL and connection parameters
+                $Url = $connectionParams.Url
+                if ($connectionParams.ClientId) { $ClientId = $connectionParams.ClientId }
+                if ($connectionParams.ClientSecret) { $ClientSecret = $connectionParams.ClientSecret }
+                if ($connectionParams.CertificatePath) { $CertificatePath = $connectionParams.CertificatePath }
+                if ($connectionParams.CertificatePassword) { $CertificatePassword = $connectionParams.CertificatePassword }
+                if ($connectionParams.TenantId) { $TenantId = $connectionParams.TenantId }
+                if ($connectionParams.ConnectionType) { $ConnectionType = $connectionParams.ConnectionType }
+            }
+
+            Write-Verbose "Connecting to SharePoint site: $Url using $ConnectionType authentication"
+
             switch ($ConnectionType) {
                 "Interactive" {
                     Connect-PnPOnline -Url $Url -Interactive
@@ -36,17 +59,32 @@ function Connect-SPALMSite {
                     if (-not $ClientId -or -not $ClientSecret) {
                         throw "ClientId and ClientSecret are required when using ClientSecret authentication"
                     }
-                    Connect-PnPOnline -Url $Url -ClientId $ClientId -ClientSecret $ClientSecret
+                    if ($TenantId) {
+                        Connect-PnPOnline -Url $Url -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
+                    } else {
+                        Connect-PnPOnline -Url $Url -ClientId $ClientId -ClientSecret $ClientSecret
+                    }
                 }
                 "Certificate" {
                     if (-not $ClientId -or -not $CertificatePath) {
                         throw "ClientId and CertificatePath are required when using Certificate authentication"
                     }
-                    if ($CertificatePassword) {
-                        Connect-PnPOnline -Url $Url -ClientId $ClientId -CertificatePath $CertificatePath -CertificatePassword (ConvertTo-SecureString -String $CertificatePassword -AsPlainText -Force)
-                    } else {
-                        Connect-PnPOnline -Url $Url -ClientId $ClientId -CertificatePath $CertificatePath
+
+                    $certParams = @{
+                        Url = $Url
+                        ClientId = $ClientId
+                        CertificatePath = $CertificatePath
                     }
+
+                    if ($CertificatePassword) {
+                        $certParams.CertificatePassword = (ConvertTo-SecureString -String $CertificatePassword -AsPlainText -Force)
+                    }
+
+                    if ($TenantId) {
+                        $certParams.TenantId = $TenantId
+                    }
+
+                    Connect-PnPOnline @certParams
                 }
             }
 

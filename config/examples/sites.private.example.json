@@ -1,0 +1,47 @@
+{
+    "environments": {
+        "dev": {
+            "name": "My Development Site",
+            "tenant": "mytenant.sharepoint.com",
+            "site": "https://mytenant.sharepoint.com/sites/mydev",
+            "authentication": {
+                "type": "Interactive",
+                "clientId": "11111111-1111-1111-1111-111111111111",
+                "tenantId": "22222222-2222-2222-2222-222222222222"
+            }
+        },
+        "test": {
+            "name": "My Test Site",
+            "tenant": "mytenant.sharepoint.com",
+            "site": "https://mytenant.sharepoint.com/sites/mytest",
+            "authentication": {
+                "type": "Certificate",
+                "clientId": "33333333-3333-3333-3333-333333333333",
+                "certificatePath": "C:\\Certificates\\spalm-cert.pfx",
+                "tenantId": "22222222-2222-2222-2222-222222222222"
+            }
+        },
+        "prod": {
+            "name": "My Production Site",
+            "tenant": "mytenant.sharepoint.com",
+            "site": "https://mytenant.sharepoint.com/sites/myprod",
+            "authentication": {
+                "type": "ClientSecret",
+                "clientId": "44444444-4444-4444-4444-444444444444",
+                "clientSecret": "YOUR_CLIENT_SECRET_HERE",
+                "tenantId": "22222222-2222-2222-2222-222222222222"
+            }
+        }
+    },
+    "options": {
+        "logging": {
+            "level": "Verbose",
+            "filePath": "logs/my-spalm.log",
+            "console": true
+        },
+        "backup": {
+            "enabled": true,
+            "path": "backups/mybackups/"
+        }
+    }
+}

@@ -5,11 +5,12 @@
 1. [Overview](#overview)
 2. [Installation](#installation)
 3. [Configuration](#configuration)
-4. [Core Modules](#core-modules)
-5. [Usage Examples](#usage-examples)
-6. [CI/CD Pipeline](#cicd-pipeline)
-7. [Docker Container](#docker-container)
-8. [Troubleshooting](#troubleshooting)
+4. [Personal Configuration](personal-configuration.md)
+5. [Core Modules](#core-modules)
+6. [Usage Examples](#usage-examples)
+7. [CI/CD Pipeline](#cicd-pipeline)
+8. [Docker Container](#docker-container)
+9. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
@@ -46,7 +47,7 @@ Import-Module ./src/SPALM/SPALM.psm1 -Force
 
 ## Configuration
 
-SPALM uses a configuration file located at `config/settings.json`. This file contains settings for:
+SPALM uses configuration files to store settings for:
 
 - Environment details
 - Site URLs
@@ -55,6 +56,24 @@ SPALM uses a configuration file located at `config/settings.json`. This file con
 - Comparison options
 - Migration options
 - Pipeline environments
+
+### Shared Configuration
+
+The shared configuration is stored in `config/settings.json` and is committed to the repository.
+
+### Private Configuration
+
+For personal or sensitive settings, SPALM supports private configuration files that are not committed to the repository:
+
+1. Create a `sites.private.json` file in the `config/private` directory (copy from `config/sites.template.json`)
+2. Add your personal SharePoint site URLs, authentication settings, and other configuration
+3. SPALM will automatically prioritize private configuration files if they exist
+
+The following file types in the `config/private` directory are ignored by git:
+
+- `.private.json` - For private JSON configuration
+- `.private.xml` - For private XML configuration
+- `.private.ps1` - For private PowerShell scripts
 
 Example configuration:
 

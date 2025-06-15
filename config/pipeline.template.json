@@ -1,0 +1,44 @@
+{
+    "azure": {
+        "subscriptionId": "00000000-0000-0000-0000-000000000000",
+        "resourceGroup": "spalm-resources",
+        "location": "eastus",
+        "tenantId": "00000000-0000-0000-0000-000000000000"
+    },
+    "github": {
+        "owner": "your-github-username",
+        "repo": "SPALM",
+        "branch": "main",
+        "pat": "YOUR_GITHUB_PAT_TOKEN"
+    },
+    "serviceConnections": {
+        "devops": {
+            "organization": "your-organization",
+            "project": "your-project"
+        }
+    },
+    "deployment": {
+        "environments": [
+            {
+                "name": "Development",
+                "url": "https://contoso.sharepoint.com/sites/dev",
+                "approvers": []
+            },
+            {
+                "name": "Test",
+                "url": "https://contoso.sharepoint.com/sites/test",
+                "approvers": [
+                    "user@contoso.com"
+                ]
+            },
+            {
+                "name": "Production",
+                "url": "https://contoso.sharepoint.com/sites/prod",
+                "approvers": [
+                    "manager@contoso.com",
+                    "admin@contoso.com"
+                ]
+            }
+        ]
+    }
+}

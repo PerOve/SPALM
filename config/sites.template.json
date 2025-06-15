@@ -1,0 +1,45 @@
+{
+    "environments": {
+        "dev": {
+            "name": "Development",
+            "tenant": "contoso.sharepoint.com",
+            "site": "https://contoso.sharepoint.com/sites/dev",
+            "authentication": {
+                "type": "Interactive",
+                "clientId": "",
+                "tenantId": ""
+            }
+        },
+        "test": {
+            "name": "Test",
+            "tenant": "contoso.sharepoint.com",
+            "site": "https://contoso.sharepoint.com/sites/test",
+            "authentication": {
+                "type": "Interactive",
+                "clientId": "",
+                "tenantId": ""
+            }
+        },
+        "prod": {
+            "name": "Production",
+            "tenant": "contoso.sharepoint.com",
+            "site": "https://contoso.sharepoint.com/sites/prod",
+            "authentication": {
+                "type": "Interactive",
+                "clientId": "",
+                "tenantId": ""
+            }
+        }
+    },
+    "options": {
+        "logging": {
+            "level": "Information",
+            "filePath": "logs/spalm.log",
+            "console": true
+        },
+        "backup": {
+            "enabled": true,
+            "path": "backups/"
+        }
+    }
+}
