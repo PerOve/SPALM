@@ -236,7 +236,7 @@ Describe "Merge-Hashtable" {
         $result = $emptyArray | Merge-Hashtable
 
         # Result should be an empty hashtable
-        $result | Should -Not -BeNullOrEmpty
+        $result | Should -BeNullOrEmpty
         $result.Keys.Count | Should -Be 0
     }
 

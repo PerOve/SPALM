@@ -5,11 +5,17 @@
     Tests the deployment script that uses GitHub secrets for SharePoint connections.
 #>
 
-BeforeAll {    # Path to the script being tested
+BeforeAll {
+    # Import the necessary modules
+    $modulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\SPALM\SPALM.psm1"
+    if (Test-Path $modulePath) {
+        Import-Module $modulePath -Force
+    }
+
+    # Path to the script being tested
     $script:scriptPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\config\deploy-with-github-secrets.ps1"
 
     # Mock all the functions that interact with external systems
-    Mock Import-Module { return $true }
     Mock Connect-SPALMSite { return $true }
     Mock Get-PnPConnection {
         param($ConnectionName)

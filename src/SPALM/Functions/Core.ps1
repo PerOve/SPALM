@@ -162,11 +162,29 @@ function Set-SPALMConfiguration {
 }
 
 function Merge-Hashtable {
-    $result = @{}
-    foreach ($item in $input) {
-        foreach ($key in $item.Keys) {
-            $result[$key] = $item[$key]
+    [CmdletBinding()]
+    param (
+        [Parameter(ValueFromPipeline = $true)]
+        [object[]]$InputObject
+    )
+
+    begin {
+        $result = @{}
+    }
+
+    process {
+        if ($null -ne $InputObject) {
+            foreach ($item in $InputObject) {
+                if ($null -ne $item -and $item.Keys.Count -gt 0) {
+                    foreach ($key in $item.Keys) {
+                        $result[$key] = $item[$key]
+                    }
+                }
+            }
         }
     }
-    return $result
+
+    end {
+        return $result
+    }
 }

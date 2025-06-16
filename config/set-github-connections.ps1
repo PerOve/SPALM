@@ -9,6 +9,12 @@
     When running locally, it looks for environment variables following the same pattern.
 #>
 
+# Import the necessary modules
+$modulePath = Join-Path -Path $PSScriptRoot -ChildPath "..\src\SPALM\SPALM.psm1"
+if (Test-Path $modulePath) {
+    Import-Module $modulePath -Force
+}
+
 # Function to test if running in GitHub Actions or local environment
 function Test-GitHubActionsEnvironment {
     return ($null -ne $env:GITHUB_ACTIONS)
@@ -110,7 +116,7 @@ $connections = $connections.GetEnumerator() | Where-Object { $null -ne $_.Value 
     $hash = @{}
     $hash[$_.Key] = $_.Value
     $hash
-} # | Merge-Hashtable -- moved to Core.ps1 for global access
+} | Merge-Hashtable
 
 # If running in GitHub Actions, print info about what was loaded
 if (Test-GitHubActionsEnvironment) {

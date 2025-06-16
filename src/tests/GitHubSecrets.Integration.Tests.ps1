@@ -20,27 +20,72 @@ BeforeAll {
 
     # Mock Connect-PnPOnline which is used by Connect-SPALMSite
     Mock Connect-PnPOnline {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory = $true)]
+            [string]$Url,
+            [string]$ClientId,
+            [string]$ClientSecret,
+            [string]$TenantId
+        )
         # Return different values based on parameters to verify correct parameters were used
-        if ($Url -eq "https://env.sharepoint.com") {
+        if ($Url -eq "https://sandhaaland.sharepoint.com/sites/projectportaldev") {
             return "Connected to environment variable URL"
+            # Mock Connect-SPALMSite to pass through parameters to Connect-PnPOnline
+            Mock Connect-SPALMSite {
+                [CmdletBinding()]
+                param(
+                    [Parameter(ParameterSetName = 'Connection')]
+                    [string]$ConnectionName,
+
+                    [Parameter(ParameterSetName = 'Direct', Mandatory = $true)]
+                    [string]$Url,
+
+                    [Parameter(ParameterSetName = 'Direct')]
+                    [string]$ClientId,
+
+                    [Parameter(ParameterSetName = 'Direct')]
+                    [string]$ClientSecret,
+
+                    [Parameter(ParameterSetName = 'Direct')]
+                    [string]$TenantId
+                )
+
+                if ($ConnectionName) {
+                    # Lookup connection details
+                    if ($ConnectionName -eq "Dev" -and $connections -and $connections.Dev) {
+                        Connect-PnPOnline -Url $connections.Dev.Url -ClientId $connections.Dev.ClientId -ClientSecret $connections.Dev.ClientSecret -TenantId $connections.Dev.TenantId
+                        return $true
+                    } elseif ($ConnectionName -eq "PrivateConnection") {
+                        $privateConn = Get-InternalPrivateConnections
+                        Connect-PnPOnline -Url $privateConn.PrivateConnection.Url -ClientId $privateConn.PrivateConnection.ClientId -ClientSecret $privateConn.PrivateConnection.ClientSecret -TenantId $privateConn.PrivateConnection.TenantId
+                        return $true
+                    }
+                } else {
+                    # Use provided parameters
+                    Connect-PnPOnline -Url $Url -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
+                    return $true
+                }
+
+                return $false
+            }
+            # Use provided parameters
+            Connect-PnPOnline -Url $Url -ClientId $ClientId -ClientSecret $ClientSecret -TenantId $TenantId
+            return $true
         }
-        elseif ($Url -eq "https://private.sharepoint.com") {
-            return "Connected to private config URL"
-        }
-        else {
-            return "Connected to $Url"
-        }
+
+        return $false
     }
 
     # Mock Get-InternalPrivateConnections
     Mock Get-InternalPrivateConnections {
         return @{
             "PrivateConnection" = @{
-                "Url" = "https://private.sharepoint.com"
-                "AuthType" = "ClientSecret"
-                "ClientId" = "private-client-id"
+                "Url"          = "https://private.sharepoint.com"
+                "AuthType"     = "ClientSecret"
+                "ClientId"     = "private-client-id"
                 "ClientSecret" = "private-client-secret"
-                "TenantId" = "private-tenant-id"
+                "TenantId"     = "private-tenant-id"
             }
         }
     }
@@ -92,7 +137,7 @@ Describe "GitHub Secrets Connection Integration" {
     Context "Environment variable connections" {
         BeforeEach {
             # Set up environment variables
-            [Environment]::SetEnvironmentVariable("DEV_SITE_URL", "https://env.sharepoint.com")
+            [Environment]::SetEnvironmentVariable("DEV_SITE_URL", "https://sandhaaland.sharepoint.com/sites/projectportaldev")
             [Environment]::SetEnvironmentVariable("AZURE_APP_CLIENT_ID", "env-client-id")
             [Environment]::SetEnvironmentVariable("AZURE_APP_CLIENT_SECRET", "env-client-secret")
             [Environment]::SetEnvironmentVariable("AZURE_APP_TENANT_ID", "env-tenant-id")
@@ -106,16 +151,15 @@ Describe "GitHub Secrets Connection Integration" {
             # Check that the connections were created
             $connections | Should -Not -BeNullOrEmpty
             $connections.Dev | Should -Not -BeNullOrEmpty
-            $connections.Dev.Url | Should -Be "https://env.sharepoint.com"
+            $connections.Dev.Url | Should -Be "https://sandhaaland.sharepoint.com/sites/projectportaldev"
         }
 
-        It "Properly connects using GitHub secret-based connection" {
-            # Connect using the connection name
+        It "Connects to the Dev site using environment variables" {
             $result = Connect-SPALMSite -ConnectionName "Dev"
 
             $result | Should -Be $true
             Should -Invoke Connect-PnPOnline -Times 1 -Exactly -ParameterFilter {
-                $Url -eq "https://env.sharepoint.com" -and
+                $Url -eq "https://sandhaaland.sharepoint.com/sites/projectportaldev" -and
                 $ClientId -eq "env-client-id" -and
                 $ClientSecret -eq "env-client-secret" -and
                 $TenantId -eq "env-tenant-id"
