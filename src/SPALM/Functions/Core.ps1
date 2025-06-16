@@ -160,3 +160,13 @@ function Set-SPALMConfiguration {
         return $true
     }
 }
+
+function Merge-Hashtable {
+    $result = @{}
+    foreach ($item in $input) {
+        foreach ($key in $item.Keys) {
+            $result[$key] = $item[$key]
+        }
+    }
+    return $result
+}

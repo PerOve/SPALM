@@ -110,7 +110,7 @@ $connections = $connections.GetEnumerator() | Where-Object { $null -ne $_.Value 
     $hash = @{}
     $hash[$_.Key] = $_.Value
     $hash
-} | Merge-Hashtable
+} # | Merge-Hashtable -- moved to Core.ps1 for global access
 
 # If running in GitHub Actions, print info about what was loaded
 if (Test-GitHubActionsEnvironment) {
@@ -133,15 +133,4 @@ if (Test-GitHubActionsEnvironment) {
 
     Write-Host "Temporary connection profiles created in $connectionsFilePath"
     Write-Host "These can be used with Connect-SPALMSite -ConnectionName 'Dev|Test|Prod|Source'"
-}
-
-# Helper function to merge hashtables
-function Merge-Hashtable {
-    $result = @{}
-    foreach ($item in $input) {
-        foreach ($key in $item.Keys) {
-            $result[$key] = $item[$key]
-        }
-    }
-    return $result
 }
