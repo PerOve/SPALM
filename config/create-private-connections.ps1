@@ -9,23 +9,23 @@
 
 $personalConnections = @{
     "MyDevTenant"  = @{
-        "Url"                 = "https://mytenant.sharepoint.com/sites/mydev"
-        "AuthType"            = "Interactive" # Interactive, ClientSecret, Certificate
+        "Url"                 = "https://sandhaaland.sharepoint.com/sites/projectportaldev"
+        "AuthType"            = "ClientSecret" # Interactive, ClientSecret, Certificate
         "ClientId"            = "" # For app-only authentication
         "CertificatePath"     = "" # For certificate authentication
         "CertificatePassword" = "" # For certificate authentication
         "TenantId"            = "" # For app-only authentication
     }
     "MyTestTenant" = @{
-        "Url"                 = "https://mytenant.sharepoint.com/sites/mytest"
-        "AuthType"            = "Interactive"
+        "Url"                 = "https://sandhaaland.sharepoint.com/sites/projectportaltest"
+        "AuthType"            = "ClientSecret"
         "ClientId"            = ""
         "CertificatePath"     = ""
         "CertificatePassword" = ""
         "TenantId"            = ""
     }
     "MyProdTenant" = @{
-        "Url"                 = "https://mytenant.sharepoint.com/sites/myprod"
+        "Url"                 = "https://sandhaaland.sharepoint.com/sites/projectportal"
         "AuthType"            = "Interactive"
         "ClientId"            = ""
         "CertificatePath"     = ""

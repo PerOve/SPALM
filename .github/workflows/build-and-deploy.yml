@@ -52,13 +52,18 @@ jobs:
             SourceVersion = '${{ github.sha }}'
             BuildDate = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss')
           }
-          $versionInfo | ConvertTo-Json | Out-File -FilePath './build/version.json' -Force
-
-      - name: Run Pester tests
+          $versionInfo | ConvertTo-Json | Out-File -FilePath './build/version.json' -Force      - name: Run Pester tests
         shell: pwsh
         run: |
           Import-Module ./src/SPALM/SPALM.psm1 -Force
+
+          # Run all tests including new GitHub secrets tests
+          Write-Host "Running all SPALM tests including GitHub connections tests..."
           Invoke-Pester -Path ./src/tests -OutputFormat NUnitXml -OutputFile ./test-results.xml
+
+          # Separate run just for GitHub connections tests with detailed output
+          Write-Host "Running GitHub connection tests specifically..."
+          Invoke-Pester -Path ./src/tests/GitHubConnections.Tests.ps1,./src/tests/GitHubSecretHelpers.Tests.ps1 -Output Detailed
 
       - name: Upload test results
         uses: actions/upload-artifact@v3

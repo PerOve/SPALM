@@ -94,6 +94,29 @@ For secure deployment to multiple environments, create GitHub Environments with 
 3. Add environment-specific secrets (DEV_SITE_URL, TEST_SITE_URL, PROD_SITE_URL)
 4. Add protection rules for sensitive environments (like requiring approval for prod)
 
+## Testing
+
+The GitHub secrets connection functionality has comprehensive tests:
+
+- **Unit Tests**: Test individual components of the GitHub secrets system
+
+  - `GitHubConnections.Tests.ps1`: Tests the functions in `set-github-connections.ps1`
+  - `GitHubSecretHelpers.Tests.ps1`: Tests the helper functions in `GitHubSecretHelpers.ps1`
+  - `DeployWithGitHubSecrets.Tests.ps1`: Tests the deployment script functionality
+
+- **Integration Tests**:
+  - `GitHubSecrets.Integration.Tests.ps1`: Tests how all components work together
+
+To run the tests:
+
+```powershell
+# Run all tests
+.\config\run-tests.ps1
+
+# Run specific tests
+Invoke-Pester -Path .\src\tests\GitHubConnections.Tests.ps1
+```
+
 ## See Also
 
 - [GitHub Secrets Documentation](https://docs.github.com/en/actions/security-guides/encrypted-secrets)
